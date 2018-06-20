@@ -1,31 +1,23 @@
 import React from 'react'
-import {Tabs, Tab} from 'material-ui/Tabs'
+import {Tab, Tabs} from 'material-ui/Tabs'
 import TextField from 'material-ui/TextField'
 import Toggle from 'material-ui/Toggle'
 import SelectField from 'material-ui/SelectField'
 import MenuItem from 'material-ui/MenuItem'
-import {
-    Table,
-    TableBody,
-    TableHeader,
-    TableHeaderColumn,
-    TableRow,
-    TableRowColumn,
-} from 'material-ui/Table'
+import {Table, TableBody, TableHeader, TableHeaderColumn, TableRow, TableRowColumn,} from 'material-ui/Table'
 import Dialog from 'material-ui/Dialog'
 import RaisedButton from 'material-ui/RaisedButton'
 import FlatButton from 'material-ui/FlatButton'
 import DatePicker from 'material-ui/DatePicker'
 import {Link} from "react-router-dom"
 import ListIcon from 'material-ui/svg-icons/action/list'
-import DeleteIcon from 'material-ui/svg-icons/action/delete'
 
 import Data from '@admin/core/data.provider'
 import ToolBar from '@admin/containers/tool-bar'
 
 export default class AttributesEdit extends React.Component {
     constructor(props) {
-        super(props)
+	    super(props);
         this.state = {
             data: {
                 showInFilter: false,
@@ -70,11 +62,11 @@ export default class AttributesEdit extends React.Component {
                 id: '',
                 value: ''
             }
-        }
-        this.getAttribute(this.props.location)
-        this.changeType = this.changeType.bind(this)
-        this.handleClose = this.handleClose.bind(this)
-        this.handleOpen = this.handleOpen.bind(this)
+        };
+	    this.getAttribute(this.props.location);
+	    this.changeType = this.changeType.bind(this);
+	    this.handleClose = this.handleClose.bind(this);
+	    this.handleOpen = this.handleOpen.bind(this);
         this.addVariant = this.addVariant.bind(this)
     }
 
@@ -99,13 +91,13 @@ export default class AttributesEdit extends React.Component {
                     this.state.variant
                 ]
             }
-        })
+        });
         this.handleClose()
     }
 
     changeState(value, key) {
-        let newState = this.state
-        newState.data[key] = value
+	    let newState = this.state;
+	    newState.data[key] = value;
         this.setState(newState)
     }
 
@@ -119,7 +111,7 @@ export default class AttributesEdit extends React.Component {
     }
 
     async getAttribute(url) {
-        const response = await Data.getResource(url)
+	    const response = await Data.getResource(url);
         this.setState({
             data: response
         })
@@ -137,9 +129,9 @@ export default class AttributesEdit extends React.Component {
                 primary={true}
                 onClick={this.addVariant}
             />
-        ]
+        ];
         if (!this.state.data)
-            return false
+	        return false;
         return (
             <div>
                 <Tabs>
@@ -149,16 +141,6 @@ export default class AttributesEdit extends React.Component {
                             <div
                                 className="resource-actions"
                             >
-                                <Link
-                                    to={`${this.props.location}/delete`}
-                                >
-                                    <FlatButton
-                                        label="Удалить"
-                                        labelStyle={{color: 'rgb(255, 64, 129)'}}
-                                        primary={true}
-                                        icon={<DeleteIcon color='rgb(255, 64, 129)'/>}
-                                    />
-                                </Link>
                                 <Link
                                     to="/attributes"
                                 >

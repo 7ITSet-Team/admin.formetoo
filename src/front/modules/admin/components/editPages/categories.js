@@ -1,5 +1,5 @@
 import React from 'react'
-import {Tabs, Tab} from 'material-ui/Tabs'
+import {Tab, Tabs} from 'material-ui/Tabs'
 import TextField from 'material-ui/TextField'
 import Toggle from 'material-ui/Toggle'
 import SelectField from 'material-ui/SelectField'
@@ -11,7 +11,7 @@ import ListIcon from 'material-ui/svg-icons/action/list'
 import DeleteIcon from 'material-ui/svg-icons/action/delete'
 import draftToHtml from "draftjs-to-html"
 import {Editor} from 'react-draft-wysiwyg'
-import {convertToRaw, EditorState, ContentState} from "draft-js"
+import {ContentState, convertToRaw, EditorState} from "draft-js"
 import htmlToDraft from 'html-to-draftjs'
 
 import Data from '@admin/core/data.provider'
@@ -19,7 +19,7 @@ import ToolBar from '@admin/containers/tool-bar'
 
 export default class CategoriesEdit extends React.Component {
 	constructor(props) {
-		super(props)
+		super(props);
 		this.state = {
 			categories: [],
 			data: {
@@ -39,16 +39,16 @@ export default class CategoriesEdit extends React.Component {
 			},
 			descState: EditorState.createEmpty(),
 			image: ''
-		}
-		this.getCategory(this.props.location)
-		this.getCategories()
-		this.uploadFile = this.uploadFile.bind(this)
-		this.onEditorDescChange = this.onEditorDescChange.bind(this)
+		};
+		this.getCategory(this.props.location);
+		this.getCategories();
+		this.uploadFile = this.uploadFile.bind(this);
+		this.onEditorDescChange = this.onEditorDescChange.bind(this);
 		this.changeParentCategory = this.changeParentCategory.bind(this)
 	}
 
 	async uploadFile(file) {
-		const result = await Data.uploadImage('/upload/categories', file.target.files[0])
+		const result = await Data.uploadImage('/upload/categories', file.target.files[0]);
 		this.setState({
 			data: {
 				...this.state.data,
@@ -68,17 +68,17 @@ export default class CategoriesEdit extends React.Component {
 	}
 
 	changeState(value, key) {
-		let newState = this.state
-		newState.data[key] = value
+		let newState = this.state;
+		newState.data[key] = value;
 		this.setState(newState)
 	}
 
 	async getCategory(uri) {
-		const response = await Data.getResource(uri)
-		const description = response.description
-		const contentBlock = htmlToDraft(description)
-		const contentState = ContentState.createFromBlockArray(contentBlock.contentBlocks)
-		const editorState = EditorState.createWithContent(contentState)
+		const response = await Data.getResource(uri);
+		const description = response.description;
+		const contentBlock = htmlToDraft(description);
+		const contentState = ContentState.createFromBlockArray(contentBlock.contentBlocks);
+		const editorState = EditorState.createWithContent(contentState);
 		this.setState({
 			data: {
 				...this.state.data,
@@ -89,7 +89,7 @@ export default class CategoriesEdit extends React.Component {
 	}
 
 	async getCategories() {
-		const response = await Data.getResource('/categories')
+		const response = await Data.getResource('/categories');
 		this.setState({
 			categories: response.categories
 		})
@@ -102,7 +102,7 @@ export default class CategoriesEdit extends React.Component {
 	}
 
 	render() {
-		console.log(this.state)
+		console.log(this.state);
 		return (
 			<div>
 				<Tabs>
@@ -113,6 +113,16 @@ export default class CategoriesEdit extends React.Component {
 								className="resource-actions"
 								to="/categories"
 							>
+								<Link
+									to={`${this.props.location}/delete`}
+								>
+									<FlatButton
+										label="Удалить"
+										labelStyle={{color: 'rgb(255, 64, 129)'}}
+										primary={true}
+										icon={<DeleteIcon color='rgb(255, 64, 129)'/>}
+									/>
+								</Link>
 								<FlatButton
 									label="Назад к списку"
 									primary={true}
