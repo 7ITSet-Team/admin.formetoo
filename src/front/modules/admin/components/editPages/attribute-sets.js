@@ -13,7 +13,7 @@ import Data from '@admin/core/data.provider'
 
 export default class AttributesCreate extends React.Component {
 	constructor(props) {
-		super(props);
+		super(props)
 		this.state = {
 			data: {
 				title: '',
@@ -21,29 +21,29 @@ export default class AttributesCreate extends React.Component {
 				slug: ''
 			},
 			attributes: []
-		};
-		this.getAttributes();
-		this.getAttributeSet(this.props.location);
+		}
+		this.getAttributes()
+		this.getAttributeSet(this.props.location)
 		this.changeAttribute = this.changeAttribute.bind(this)
 	}
 
 	async getAttributes() {
-		const response = await Data.getData('/attributes');
+		const response = await Data.getData('/attributes')
 		this.setState({
 			attributes: response.data
 		})
 	}
 
 	async getAttributeSet(url) {
-		const response = await Data.getResource(url);
+		const response = await Data.getResource(url)
 		this.setState({
 			data: response
 		})
 	}
 
 	changeState(value, key) {
-		let newState = this.state;
-		newState.data[key] = value;
+		let newState = this.state
+		newState.data[key] = value
 		this.setState(newState)
 	}
 
