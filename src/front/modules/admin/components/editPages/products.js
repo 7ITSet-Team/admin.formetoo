@@ -13,6 +13,7 @@ import {
 	TableRowColumn,
 } from 'material-ui/Table'
 import DeleteIcon from 'material-ui/svg-icons/action/delete'
+import CopyIcon from 'material-ui/svg-icons/action/flip-to-front'
 import DatePicker from 'material-ui/DatePicker'
 import {Link} from "react-router-dom"
 import {FlatButton} from "material-ui"
@@ -206,6 +207,19 @@ export default class ProductsEdit extends React.Component {
 							<div
 								className="resource-actions"
 							>
+								<Link
+									to={{
+										pathname: `${this.props.location}/copy`,
+										state: this.state.data
+									}}
+								>
+									<FlatButton
+										label="Копировать"
+										labelStyle={{color: 'rgb(64, 255, 129)'}}
+										primary={true}
+										icon={<CopyIcon color='rgb(64, 255, 129)'/>}
+									/>
+								</Link>
 								<Link
 									to={`${this.props.location}/delete`}
 								>

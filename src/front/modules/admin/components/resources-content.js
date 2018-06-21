@@ -14,6 +14,7 @@ import {Link} from 'react-router-dom'
 import FalseIcon from 'material-ui/svg-icons/content/clear'
 import TrueIcon from 'material-ui/svg-icons/action/done'
 import SaveIcon from 'material-ui/svg-icons/content/save'
+import Chip from 'material-ui/Chip'
 
 import Data from '@admin/core/data.provider'
 
@@ -30,8 +31,10 @@ export default class ResourcesContent extends React.Component {
 		}
 		if (this.props.path === '/users')
 			this.getRoles()
-		if (this.props.path === '/products')
+		if (this.props.path === '/products') {
 			this.getProductsPrice()
+			this.getCategories()
+		}
 	}
 
 	componentWillReceiveProps(nextProps) {
@@ -49,6 +52,13 @@ export default class ResourcesContent extends React.Component {
 					[product.slug]: product.price
 				}
 			})
+		})
+	}
+
+	async getCategories() {
+		const response = await Data.getResource('/categories')
+		this.setState({
+			categories: response.categories
 		})
 	}
 
@@ -203,6 +213,37 @@ export default class ResourcesContent extends React.Component {
 																})
 															}}
 														/>
+													</TableRowColumn>
+												)
+											}
+											if (column.key === 'categories') {
+												return (
+													<TableRowColumn
+														key={i}
+													>
+														<div
+															style={{
+																display: 'flex',
+																flexWrap: 'wrap'
+															}}
+														>
+															{this.state.categories.map((category, i) => {
+																return data.categories.map(productCategory => {
+																	if (category.slug === productCategory) {
+																		return (
+																			<Chip
+																				style={{
+																					margin: '4px'
+																				}}
+																				key={i}
+																			>
+																				{category.title}
+																			</Chip>
+																		)
+																	}
+																})
+															})}
+														</div>
 													</TableRowColumn>
 												)
 											}

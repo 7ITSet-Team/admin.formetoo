@@ -18,8 +18,9 @@ import FlatButton from 'material-ui/FlatButton'
 import {Link} from 'react-router-dom'
 import uid from 'uid'
 import {Editor} from 'react-draft-wysiwyg'
-import {EditorState, convertToRaw} from 'draft-js'
+import {ContentState, convertToRaw, EditorState} from 'draft-js'
 import draftToHtml from 'draftjs-to-html'
+import htmlToDraft from "html-to-draftjs"
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css'
 
 import Data from '@admin/core/data.provider'
@@ -35,6 +36,11 @@ export default class ProductsCreate extends React.Component {
 				fromSet: [],
 				images: [],
 				categories: [],
+				seo: {
+					title: '',
+					description: '',
+					keywords: '',
+				},
 				'attribute-sets': [],
 				attributes: [],
 				'tab-sets': [],
@@ -44,6 +50,9 @@ export default class ProductsCreate extends React.Component {
 			descState: EditorState.createEmpty(),
 			shortDescState: EditorState.createEmpty(),
 			products: []
+		}
+		if (!!this.props.match) {
+			this.getProduct()
 		}
 		this.getResource('/products')
 		this.getResource('/categories')
@@ -56,6 +65,29 @@ export default class ProductsCreate extends React.Component {
 		this.changeTabSets = this.changeTabSets.bind(this)
 		this.onEditorDescChange = this.onEditorDescChange.bind(this)
 		this.onEditorShortDescChange = this.onEditorShortDescChange.bind(this)
+	}
+
+	async getProduct() {
+		const id = this.props.match.params.id
+		let response = await Data.getResource('/products/' + id)
+		delete response._id
+		const description = response.description
+		const contentBlockDesc = htmlToDraft(description)
+		const contentStateDesc = ContentState.createFromBlockArray(contentBlockDesc.contentBlocks)
+		const editorStateDesc = EditorState.createWithContent(contentStateDesc)
+		const shortDescription = response.shortDescription
+		const contentBlockShortDesc = htmlToDraft(shortDescription)
+		const contentStateShortDesc = ContentState.createFromBlockArray(contentBlockShortDesc.contentBlocks)
+		const editorStateShortDesc = EditorState.createWithContent(contentStateShortDesc)
+		this.setState({
+			data: {
+				...this.state.data,
+				...response,
+				sku: response.sku + '-COPY'
+			},
+			descState: editorStateDesc,
+			shortDescState: editorStateShortDesc
+		})
 	}
 
 	changeState(value, key) {
@@ -160,7 +192,6 @@ export default class ProductsCreate extends React.Component {
 	render() {
 		if (!this.state.categories || !this.state.products || !this.state['attribute-sets'] || !this.state['tab-sets'])
 			return false
-		console.log(this.state.data)
 		return (
 			<div>
 				<Tabs>
@@ -183,12 +214,15 @@ export default class ProductsCreate extends React.Component {
 									marginLeft: '20px'
 								}}
 								label="Активный"
+								toggled={this.state.data.isActive}
 								onToggle={(event, value) => this.changeState(value, 'isActive')}
 							/>
 							<TextField
 								fullWidth={true}
 								hintText="Заголовок"
+								floatingLabelText="Заголовок"
 								errorText="Поле обязательно"
+								value={this.state.data.title}
 								onChange={(event, value) => this.changeState(value, 'title')}
 							/>
 							<div
@@ -232,13 +266,17 @@ export default class ProductsCreate extends React.Component {
 							<TextField
 								fullWidth={true}
 								hintText="Артикул"
+								floatingLabelText="Артикул"
 								errorText="Поле обязательно"
+								value={this.state.data.sku}
 								onChange={(event, value) => this.changeState(value, 'sku')}
 							/>
 							<TextField
 								fullWidth={true}
 								hintText="Цена"
+								floatingLabelText="Цена"
 								errorText="Поле обязательно"
+								value={this.state.data.price}
 								onChange={(event, value) => this.changeState(value, 'price')}
 							/>
 							<SelectField
@@ -336,6 +374,8 @@ export default class ProductsCreate extends React.Component {
 							<TextField
 								fullWidth={true}
 								hintText="SEO заголовок"
+								floatingLabelText="SEO заголовок"
+								value={this.state.data.seo.title}
 								onChange={(event, value) => this.changeState({
 									...this.state.data.seo,
 									title: value
@@ -344,6 +384,8 @@ export default class ProductsCreate extends React.Component {
 							<TextField
 								fullWidth={true}
 								hintText="SEO описание"
+								floatingLabelText="SEO описание"
+								value={this.state.data.seo.description}
 								onChange={(event, value) => this.changeState({
 									...this.state.data.seo,
 									description: value
@@ -352,6 +394,8 @@ export default class ProductsCreate extends React.Component {
 							<TextField
 								fullWidth={true}
 								hintText="SEO ключевые слова"
+								floatingLabelText="SEO ключевые слова"
+								value={this.state.data.seo.keywords}
 								onChange={(event, value) => this.changeState({
 									...this.state.data.seo,
 									keywords: value
