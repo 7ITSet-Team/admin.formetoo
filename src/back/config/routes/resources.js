@@ -113,23 +113,42 @@ module.exports = (app, resourceCollection) => {
 					seo_description: resource.seo.description,
 					seo_keywords: resource.seo.keywords
 				}
+				resource.attributes.forEach(attribute => {
+					if (attribute.attrType === 'multipleSelect') {
+						newResource[attribute.name] = attribute.value.join(', ')
+						return true
+					}
+					if (attribute.attrType === 'interval') {
+						newResource[attribute.name + '_from'] = attribute.value.from
+						newResource[attribute.name + '_to'] = attribute.value.to
+						return true
+					}
+					newResource[attribute.name] = attribute.value
+				})
+				resource.tabs.forEach(tab => {
+					newResource[tab.name] = tab.value
+				})
 				if (resource.isActive === 'TRUE')
 					resource.isActive = true
 				else
 					resource.isActive = false
+				delete newResource.attributes
+				delete newResource.tabs
 				delete newResource.seo
 				delete newResource._id
 				delete newResource.attributes
 				delete newResource.tabs
+				console.log(newResource)
 				!!newResource.categories ? newResource.categories = newResource.categories.join(', ') : newResource.categories = ''
 				!!newResource['attribute-sets'] ? newResource['attribute-sets'] = newResource['attribute-sets'].join(', ') : newResource['attribute-sets'] = ''
-				!! newResource['tab-sets'] ? newResource['tab-sets'] = newResource['tab-sets'].join(', ') : newResource['tab-sets'] = ''
+				!!newResource['tab-sets'] ? newResource['tab-sets'] = newResource['tab-sets'].join(', ') : newResource['tab-sets'] = ''
+				!!newResource.fromSet ? newResource.fromSet = newResource.fromSet.join(', ') : newResource.fromSet = ''
 				!!newResource.relatedProducts ? newResource.relatedProducts = newResource.relatedProducts.join(', ') : newResource.relatedProducts = ''
 				!!newResource.images ? newResource.images = newResource.images.join(', ') : newResource.images = ''
 				return newResource
 			})
+			console.log(newResources)
 			const unparse = Papa.unparse(newResources, {
-				delimiter: ';',
 				encoding: 'utf-8'
 			})
 			fs.writeFileSync(`${__dirname}/${req.params.resource}.csv`, unparse)
