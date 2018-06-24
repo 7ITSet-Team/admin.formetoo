@@ -58,7 +58,6 @@ module.exports = (app, resourceCollection) => {
 							res.send({
 								success: false
 							})
-						fs.unlinkSync('watermarked.png')
 					})
 				})
 		})
