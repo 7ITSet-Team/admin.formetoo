@@ -1,7 +1,7 @@
 const AuthProvider = require('../../core/auth.provider')
 
 module.exports = (app, resourceCollection) => {
-    app.post('/login', async (req, res) => {
+    app.post('/api/login', async (req, res) => {
         const {email, password} = req.body
         const user = {
             email: email.toLowerCase()
@@ -21,7 +21,7 @@ module.exports = (app, resourceCollection) => {
             })
     })
 
-    app.get('/profile', (req, res) => {
+    app.get('/api/profile', (req, res) => {
         const token = req.headers.authorization
         const user = AuthProvider.decode(token)
         if (user)
@@ -36,7 +36,7 @@ module.exports = (app, resourceCollection) => {
             })
     })
 
-    app.post('/profile', async (req, res) => {
+    app.post('/api/profile', async (req, res) => {
         const profile = req.body
         const token = req.headers.authorization
         const oldUser = AuthProvider.decode(token)
