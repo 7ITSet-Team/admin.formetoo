@@ -1,7 +1,7 @@
 {
   "name": "admin-panel",
   "version": "1.0.0",
-  "description": "",
+  "description": "admin.formetoo",
   "main": "index.js",
   "scripts": {
     "front-prod": "NODE_ENV=production node config/webpack.build.js",

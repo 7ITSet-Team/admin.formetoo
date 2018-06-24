@@ -8,7 +8,7 @@ export default {
 
 /*export default {
     uri: {
-        admin: 'http://admin.formetoo.ru',
+        src: 'http://admin.formetoo.ru',
         login: 'http://admin.formetoo.ru/login',
         allowed: 'http://admin.formetoo.ru/allowed'
     }

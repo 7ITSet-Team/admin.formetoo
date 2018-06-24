@@ -9,16 +9,14 @@ const ENV = process.env.NODE_ENV || 'development'
 
 const _root = path.resolve()
 const _project = path.join(_root, '/src/front')
-const _modules = path.join(_project, '/modules')
 const _entry = _project + '/launcher.js'
-const _htmlTemplate = _project + '/index.html'
 const _themePath = _project + '/styles/'
 const _output = path.join(_root, '/build/public/', (ENV === 'production') ? '/prod' : '/dev')
 
 const aliases = {
-    '@project': _project,
-    '@admin': _modules + '/admin',
-    '@common': _modules + '/common',
+    '@admin': _project,
+    '@src': _project + '/src',
+    '@common': _project + '/common',
     '@theme': _themePath
 }
 
