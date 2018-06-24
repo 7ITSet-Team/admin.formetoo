@@ -19,7 +19,8 @@ cloudinary.config({
 
 module.exports = (app, resourceCollection) => {
 	return resources.forEach((resource) => {
-		app.get('/allowed', async (req, res) => {
+		app.get('/api/allowed', async (req, res) => {
+			console.log('test allowed')
 			const allowedResources = await DataProvider.sendAllowedResources(resourceCollection('users'), resourceCollection, req.headers.authorization)
 			if (allowedResources.success)
 				return res
@@ -39,7 +40,7 @@ module.exports = (app, resourceCollection) => {
 
 		const upload_middleware = multer({dest: './'})
 
-		app.post('/upload/:resource', upload_middleware.single('file'), async (req, res) => {
+		app.post('/api/upload/:resource', upload_middleware.single('file'), async (req, res) => {
 			const path = req.file.destination + req.file.path
 			gm(path)
 				.drawText(80, 80, "FORMETOO.RU")
@@ -62,7 +63,7 @@ module.exports = (app, resourceCollection) => {
 				})
 		})
 
-		app.post('/export/:resource', upload_middleware.single('file'), (req, res) => {
+		app.post('/api/export/:resource', upload_middleware.single('file'), (req, res) => {
 			fs.readFile(req.file.path, {encoding: 'utf-8'}, async (err, data) => {
 				if (err) throw err
 				fs.unlinkSync(req.file.path)
@@ -104,7 +105,7 @@ module.exports = (app, resourceCollection) => {
 			})
 		})
 
-		app.get('/import/:resource', async (req, res) => {
+		app.get('/api/import/:resource', async (req, res) => {
 			let resources = await resourceCollection(req.params.resource).find({}).toArray()
 			const newResources = resources.map(resource => {
 				let newResource = {
@@ -156,7 +157,7 @@ module.exports = (app, resourceCollection) => {
 			res.sendFile(path, () => fs.unlinkSync(path))
 		})
 
-		app.get('/' + resource, async (req, res) => {
+		app.get('/api/' + resource, async (req, res) => {
 			const resources = await resourceCollection(resource).find({}).toArray()
 			const count = await resourceCollection(resource).count()
 			if (!resources && !count)
@@ -187,7 +188,7 @@ module.exports = (app, resourceCollection) => {
 			return res.send(data)
 		})
 
-		app.get('/' + resource + '/:id', async (req, res) => {
+		app.get('/api/' + resource + '/:id', async (req, res) => {
 			const resourceItem = await resourceCollection(resource).findOne({_id: ObjectID(req.params.id)})
 			if (!resourceItem)
 				return res.send({
@@ -264,7 +265,7 @@ module.exports = (app, resourceCollection) => {
 				return res.send(resourceItem)
 		})
 
-		app.post('/' + resource, async (req, res) => {
+		app.post('/api/' + resource, async (req, res) => {
 			if (resource === 'users') {
 				let user = req.body
 				user.password = await AuthProvider.getHash(req.body.password)
@@ -293,7 +294,7 @@ module.exports = (app, resourceCollection) => {
 			})
 		})
 
-		app.post('/' + resource + '/:id', (req, res) => {
+		app.post('/api/' + resource + '/:id', (req, res) => {
 			if (resource === 'users') {
 				let user = req.body
 				user.password = AuthProvider.getHash(req.body.password)
@@ -320,7 +321,7 @@ module.exports = (app, resourceCollection) => {
 				})
 		})
 
-		app.post('/:resource/:id/delete', (req, res) => {
+		app.post('/api/:resource/:id/delete', (req, res) => {
 			resourceCollection(req.params.resource).deleteOne({_id: ObjectID(req.params.id)})
 			res.status(200)
 		})
