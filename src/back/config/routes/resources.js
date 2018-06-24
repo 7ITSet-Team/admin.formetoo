@@ -20,7 +20,6 @@ cloudinary.config({
 module.exports = (app, resourceCollection) => {
 	return resources.forEach((resource) => {
 		app.get('/api/allowed', async (req, res) => {
-			console.log('test allowed')
 			const allowedResources = await DataProvider.sendAllowedResources(resourceCollection('users'), resourceCollection, req.headers.authorization)
 			if (allowedResources.success)
 				return res
