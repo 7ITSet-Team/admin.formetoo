@@ -4,9 +4,7 @@
   "description": "admin.formetoo",
   "main": "index.js",
   "scripts": {
-    "front-prod": "NODE_ENV=production node config/webpack.build.js",
-    "front-dev": "node config/webpack.build.js",
-    "back": "nodemon src/back/app.js"
+    "back": "nodemon src/app.js"
   },
   "author": "",
   "license": "ISC",
