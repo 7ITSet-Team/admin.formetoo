@@ -4,8 +4,7 @@ const fs = require('fs')
 const cloudinary = require('cloudinary')
 const Papa = require('papaparse')
 const gm = require('gm')
-const axios = require('axios')
-const FormData = require('form-data')
+const archiver = require('archiver')
 
 const resources = require('../../constants/constants').resources
 const AuthProvider = require('../../core/auth.provider')
@@ -62,12 +61,12 @@ module.exports = (app, resourceCollection) => {
 		})
 
 		app.post('/api/export/:resource', upload_middleware.single('file'), (req, res) => {
-			fs.readFile(req.file.path, {encoding: 'utf-8'}, async (err, data) => {
+			fs.readFile(req.file.path, {encoding: 'CP1251'}, async (err, data) => {
 				if (err) throw err
 				fs.unlinkSync(req.file.path)
 				const parsed = Papa.parse(data, {
 					delimiter: ';',
-					encoding: 'utf-8',
+					encoding: 'CP1251',
 					header: true
 				})
 				const output = parsed.data
@@ -137,7 +136,6 @@ module.exports = (app, resourceCollection) => {
 				delete newResource._id
 				delete newResource.attributes
 				delete newResource.tabs
-				console.log(newResource)
 				!!newResource.categories ? newResource.categories = newResource.categories.join(', ') : newResource.categories = ''
 				!!newResource['attribute-sets'] ? newResource['attribute-sets'] = newResource['attribute-sets'].join(', ') : newResource['attribute-sets'] = ''
 				!!newResource['tab-sets'] ? newResource['tab-sets'] = newResource['tab-sets'].join(', ') : newResource['tab-sets'] = ''
@@ -146,13 +144,42 @@ module.exports = (app, resourceCollection) => {
 				!!newResource.images ? newResource.images = newResource.images.join(', ') : newResource.images = ''
 				return newResource
 			})
-			console.log(newResources)
 			const unparse = Papa.unparse(newResources, {
-				encoding: 'utf-8'
+				encoding: 'CP1251'
 			})
-			fs.writeFileSync(`${__dirname}/${req.params.resource}.csv`, unparse)
-			const path = `${__dirname + '/' + req.params.resource}.csv`
-			res.sendFile(path, () => fs.unlinkSync(path))
+			let time = new Date()
+			const formatedDate = time.getHours().toString() + ':' + time.getMinutes().toString() + ':' + time.getSeconds().toString()
+			const pathFile = `${__dirname}/${time.toLocaleDateString()}.${formatedDate}.csv`
+			const pathArchive = `${__dirname}/${time.toLocaleDateString()}.${formatedDate}.zip`
+			fs.writeFileSync(pathFile, unparse)
+
+			const output = fs.createWriteStream(pathArchive)
+			let archive = archiver('zip', {
+				zlib: { level: 9 }
+			})
+
+			output.on('close', () => {
+				res.download(pathArchive, `${time.toLocaleDateString()}.${formatedDate}.zip`, null, () => {
+					fs.unlinkSync(pathFile)
+					fs.unlinkSync(pathArchive)
+				})
+			})
+
+			archive.on('warning', (err) => {
+				throw err
+			})
+
+			archive.on('error', (err) => {
+				res.send({
+					success: false,
+					msg: 'Ошибка при архивации файла для экспорта'
+				})
+				throw err
+			})
+
+			archive.pipe(output)
+			archive.append(fs.createReadStream(pathFile), {name: `${time.toLocaleDateString()}.${formatedDate}.csv`})
+			archive.finalize()
 		})
 
 		app.get('/api/' + resource, async (req, res) => {
@@ -236,6 +263,7 @@ module.exports = (app, resourceCollection) => {
 				}
 
 				let endData = resourceItem
+
 				attributes.forEach(attr => {
 					if (!isContained(attr, resourceItem.attributes))
 						endData.attributes.push(attr)
@@ -263,41 +291,89 @@ module.exports = (app, resourceCollection) => {
 				return res.send(resourceItem)
 		})
 
+		app.post('/api/products/:resource', async (req, res) => {
+			const resource = req.params.resource
+			if (resource === 'attributes') {
+				const attrSets = await resourceCollection('attribute-sets').find({
+					slug: {
+						$in: req.body
+					}
+				}).toArray()
+				let attributeSlugs = []
+				attrSets.forEach(set => {
+					attributeSlugs.push(...set.attributes)
+				})
+				const attributes = await resourceCollection('attributes').find({
+					slug: {
+						$in: attributeSlugs
+					}
+				}).toArray()
+				res.send(attributes)
+			}
+			if (resource === 'tabs') {
+				const tabSets = await resourceCollection('tab-sets').find({
+					slug: {
+						$in: req.body
+					}
+				}).toArray()
+				let tabSlugs = []
+				tabSets.forEach(set => {
+					tabSlugs.push(...set.tabs)
+				})
+				const tabs = await resourceCollection('tabs').find({
+					slug: {
+						$in: tabSlugs
+					}
+				}).toArray()
+				res.send(tabs)
+			}
+		})
+
 		app.post('/api/' + resource, async (req, res) => {
 			if (resource === 'users') {
 				let user = req.body
 				user.password = await AuthProvider.getHash(req.body.password)
 				try {
-					resourceCollection(resource).insert(user)
+					await resourceCollection(resource).insert(user)
+					return res.send({
+						success: true
+					})
 				} catch (error) {
 					return res.send({
 						success: false,
 						msg: 'Ошибка создания пользователя'
 					})
 				}
+			}
+			try {
+				if (resource === 'products') {
+					await resourceCollection(resource).insert({
+						...req.body,
+						attributes: req.body.attributes || [],
+						tabs: req.body.tabs || []
+					})
+					return res.send({
+						success: true
+					})
+				}
+				await resourceCollection(resource).insert(req.body)
 				return res.send({
 					success: true
 				})
-			}
-			try {
-				resourceCollection(resource).insert(req.body)
-			} catch (error) {
+			} catch (err) {
 				return res.send({
 					success: false,
 					msg: 'Ошибка создания пользователя'
 				})
 			}
-			return res.send({
-				success: true
-			})
 		})
 
-		app.post('/api/' + resource + '/:id', (req, res) => {
+		app.post('/api/' + resource + '/:id', async (req, res) => {
 			if (resource === 'users') {
 				let user = req.body
 				user.password = AuthProvider.getHash(req.body.password)
 				user._id = ObjectID(req.params.id)
-				resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, user)
+				await resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, user)
 					.catch(() => {
 						return res.send({
 							success: false,
@@ -310,18 +386,29 @@ module.exports = (app, resourceCollection) => {
 			}
 			let newResource = req.body
 			newResource._id = ObjectID(newResource._id)
-			resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, newResource)
+			await resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, newResource)
 				.catch(() => {
 					return res.send({
 						success: false,
 						msg: 'Ошибка редактирования ресурса'
 					})
 				})
+			return res.send({
+				success: true
+			})
 		})
 
-		app.post('/api/:resource/:id/delete', (req, res) => {
-			resourceCollection(req.params.resource).deleteOne({_id: ObjectID(req.params.id)})
-			res.status(200)
+		app.post('/api/:resource/:id/delete', async (req, res) => {
+			await resourceCollection(req.params.resource).deleteOne({_id: ObjectID(req.params.id)})
+				.catch(() => {
+					return res.send({
+						success: false,
+						msg: 'Ошибка удаления ресурса'
+					})
+				})
+			return res.send({
+				success: true
+			})
 		})
 	})
 }
