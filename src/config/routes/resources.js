@@ -52,8 +52,15 @@ module.exports = (app, resourceCollection) => {
                     $in: attributeSlugs
                 }
             }).toArray()
+            const attributesData = attributes.map(attribute => {
+                return {
+                    slug: attribute.slug,
+                    title: attribute.title,
+                    attrType: attribute.type
+                }
+            })
 
-            res.send(attributes)
+            res.send(attributesData)
         }
         if (req.params.resource === 'tabs') {
             const tabSets = await resourceCollection('tab-sets').find({
@@ -65,13 +72,14 @@ module.exports = (app, resourceCollection) => {
             tabSets.forEach(set => {
                 tabSlugs.push(...set.tabs)
             })
-            const tabs = await resourceCollection('tabs').find({
-                slug: {
-                    $in: tabSlugs
+            const tabsData = attributes.map(tab => {
+                return {
+                    slug: tab.slug,
+                    title: tab.title
                 }
-            }).toArray()
+            })
 
-            res.send(tabs)
+            res.send(tabsData)
         }
     })
 
@@ -361,6 +369,9 @@ module.exports = (app, resourceCollection) => {
             categories: 'Категории',
             'attribute-sets': 'Набор атрибутов',
             'tab-sets': 'Набор табов',
+            relatedProducts: 'Похожие продукты',
+            images: 'Изображения',
+            fromSet: 'Из набора',
             seo: {
                 title: 'СЕО заголовок',
                 description: 'СЕО описание',
