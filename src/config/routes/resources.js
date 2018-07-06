@@ -76,7 +76,9 @@ module.exports = (app, resourceCollection) => {
             const tabsData = attributes.map(tab => {
                 return {
                     slug: tab.slug,
-                    title: tab.title
+                    title: tab.title,
+                    tabType: tab.attrType,
+                    variants: tab.variants
                 }
             })
 
