@@ -56,6 +56,7 @@ module.exports = (app, resourceCollection) => {
                 return {
                     slug: attribute.slug,
                     title: attribute.title,
+                    name: attribute.name,
                     attrType: attribute.attrType,
                     variants: attribute.variants
                 }
@@ -82,7 +83,8 @@ module.exports = (app, resourceCollection) => {
                 return {
                     slug: tab.slug,
                     title: tab.title,
-                    tabType: tab.attrType,
+                    name: tab.name,
+                    tabType: tab.tabType,
                     variants: tab.variants
                 }
             })
@@ -96,16 +98,15 @@ module.exports = (app, resourceCollection) => {
             if (err) throw err
             fs.unlinkSync(req.file.path)
             const parsed = Papa.parse(data, {
-                delimiter: ';',
-                encoding: 'utf-8',
+                delimiter: ',',
                 header: true
             })
             const output = parsed.data
             output.forEach(item => {
                 item.seo = {
-                    title: item.seo_title,
-                    description: item.seo_description,
-                    keywords: item.seo_keywords
+                    title: !item.seo_title ? '' : item.seo_title,
+                    description: !item.seo_description ? '' : item.seo_description,
+                    keywords: !item.seo_keywords ? [] : item.seo_keywords.split(', ')
                 }
                 if (item.isActive === 'TRUE' || item.isActive === 'true')
                     item.isActive = true
@@ -114,11 +115,12 @@ module.exports = (app, resourceCollection) => {
                 delete item.seo_title
                 delete item.seo_description
                 delete item.seo_keywords
-                !!item.categories ? item.categories = item.categories.split(' ') : item.categories = []
-                !!item['tab-sets'] ? item['tab-sets'] = item['tab-sets'].split(' ') : item['tab-sets'] = []
-                !!item['attribute-sets'] ? item['attribute-sets'] = item['attribute-sets'].split(' ') : item['attribute-sets'] = []
-                !!item.images ? item.images = item.images.split(' ') : item.images = []
-                !!item.relatedProducts ? item.relatedProducts = item.relatedProducts.split(' ') : item.relatedProducts = []
+                !!item.categories ? item.categories = item.categories.split(', ') : item.categories = []
+                !!item['tab-sets'] ? item['tab-sets'] = item['tab-sets'].split(', ') : item['tab-sets'] = []
+                !!item['attribute-sets'] ? item['attribute-sets'] = item['attribute-sets'].split(', ') : item['attribute-sets'] = []
+                !!item.images ? item.images = item.images.split(', ') : item.images = []
+                !!item.relatedProducts ? item.relatedProducts = item.relatedProducts.split(', ') : item.relatedProducts = []
+                !!item.fromSet ? item.fromSet = item.fromSet.split(', ') : item.fromSet = []
                 item.attributes = []
                 item.tabs = []
                 item.creationDate = new Date()
@@ -140,14 +142,14 @@ module.exports = (app, resourceCollection) => {
                 ...resource,
                 seo_title: resource.seo.title,
                 seo_description: resource.seo.description,
-                seo_keywords: resource.seo.keywords.join(' ')
+                seo_keywords: resource.seo.keywords.join(', ')
             }
             resource.attributes.forEach(attribute => {
-                if (attribute.attrType === 'multipleSelect') {
+                if (attribute.attrType === 'multipleSelect' && !!attribute.value) {
                     newResource[attribute.name] = attribute.value.join(', ')
                     return true
                 }
-                if (attribute.attrType === 'interval') {
+                if (attribute.attrType === 'interval' && !!attribute.value) {
                     newResource[attribute.name + '_from'] = attribute.value.from
                     newResource[attribute.name + '_to'] = attribute.value.to
                     return true
@@ -155,6 +157,15 @@ module.exports = (app, resourceCollection) => {
                 newResource[attribute.name] = attribute.value
             })
             resource.tabs.forEach(tab => {
+                if (tab.tabType === 'multipleSelect' && !!tab.value) {
+                    newResource[tab.name] = tab.value.join(', ')
+                    return true
+                }
+                if (tab.tabType === 'interval' && !!tab.value) {
+                    newResource[tab.name + '_from'] = tab.value.from
+                    newResource[tab.name + '_to'] = tab.value.to
+                    return true
+                }
                 newResource[tab.name] = tab.value
             })
             if (resource.isActive === 'TRUE')
@@ -178,9 +189,7 @@ module.exports = (app, resourceCollection) => {
             return newResource
         })
         const unparse = Papa.unparse(newResources, {
-            delimiter: ';',
-            encoding: 'utf-8',
-            header: true
+            delimiter: ','
         })
         let time = new Date()
         const formatedDate = time.getHours().toString() + ':' + time.getMinutes().toString() + ':' + time.getSeconds().toString()
