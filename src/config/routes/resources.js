@@ -73,7 +73,12 @@ module.exports = (app, resourceCollection) => {
             tabSets.forEach(set => {
                 tabSlugs.push(...set.tabs)
             })
-            const tabsData = attributes.map(tab => {
+            const tabs = await resourceCollection('tabs').find({
+                slug: {
+                    $in: tabSlugs
+                }
+            }).toArray()
+            const tabsData = tabs.map(tab => {
                 return {
                     slug: tab.slug,
                     title: tab.title,
