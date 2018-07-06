@@ -56,7 +56,7 @@ module.exports = (app, resourceCollection) => {
                 return {
                     slug: attribute.slug,
                     title: attribute.title,
-                    attrType: attribute.type
+                    attrType: attribute.attrType
                 }
             })
 
