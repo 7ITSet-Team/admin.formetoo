@@ -555,9 +555,6 @@ module.exports = (app, resourceCollection) => {
                 success: true
             })
         }
-        if (resource === 'categories') {
-            resourceItem.seo.keywords = resourceItem.seo.keywords.split(', ')
-        }
         try {
             await resourceCollection(resource).insert(resourceItem)
         } catch (err) {
@@ -624,7 +621,8 @@ module.exports = (app, resourceCollection) => {
                     time: `${time.getDay()} ${month[time.getMonth()]} ${formatedDate}`,
                     action: `Редактировал продукт: ${req.body.title}`,
                     before: beforeChange,
-                    after: afterChange
+                    after: afterChange,
+                    actionType: 'edit'
                 })
             } catch (e) {
                 return res.send({

@@ -15,7 +15,9 @@ module.exports = (app, resourceCollection) => {
                     token: result.token
                 })
         else
-            return res.send({
+            return res
+                .status(result.status)
+                .send({
                 success: false,
                 msg: result.msg
             })
