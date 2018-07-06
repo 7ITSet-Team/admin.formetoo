@@ -252,6 +252,14 @@ module.exports = (app, resourceCollection) => {
 
     app.get('/api/:resource', async (req, res) => {
         const resource = req.params.resource
+        if (resource === 'tree') {
+            const categories = await resourceCollection('categories').find({}).toArray()
+            categories.forEach(async category => {
+                const childs = await resourceCollection('categories').find({slug: category.slug}).toArray()
+                console.log(childs)
+            })
+            return
+        }
         const resources = await resourceCollection(resource).find({}).toArray()
         const count = await resourceCollection(resource).count()
         if (!resources && !count)
