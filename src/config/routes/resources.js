@@ -10,9 +10,9 @@ const AuthProvider = require('../../core/auth.provider')
 const DataProvider = require('../../core/data.provider')
 
 cloudinary.config({
-	cloud_name: 'dtb4964cx',
-	api_key: '822487292722641',
-	api_secret: '86YmWPtQibGaXOkxQDmRJgXqC8U'
+    cloud_name: 'dtb4964cx',
+    api_key: '822487292722641',
+    api_secret: '86YmWPtQibGaXOkxQDmRJgXqC8U'
 })
 
 module.exports = (app, resourceCollection) => {
@@ -199,7 +199,7 @@ module.exports = (app, resourceCollection) => {
 
         const output = fs.createWriteStream(pathArchive)
         let archive = archiver('zip', {
-            zlib: { level: 9 }
+            zlib: {level: 9}
         })
 
         output.on('close', () => {
@@ -254,11 +254,25 @@ module.exports = (app, resourceCollection) => {
         const resource = req.params.resource
         if (resource === 'tree') {
             const categories = await resourceCollection('categories').find({}).toArray()
-            categories.forEach(async category => {
-                const childs = await resourceCollection('categories').find({slug: category.slug}).toArray()
-                console.log(childs)
+            const products = await resourceCollection('products').find({}).toArray()
+            let tree = []
+            let productsCategory = []
+            categories.forEach(category => {
+                productsCategory = []
+                products.forEach(product => {
+                    if (product.categories.indexOf(category.slug) !== -1) {
+                        productsCategory.push(product)
+                    }
+                })
+                tree.push({
+                    ...category,
+                    products: productsCategory
+                })
             })
-            return
+            return res.send({
+                success: true,
+                tree: tree
+            })
         }
         const resources = await resourceCollection(resource).find({}).toArray()
         const count = await resourceCollection(resource).count()
@@ -291,7 +305,11 @@ module.exports = (app, resourceCollection) => {
             success: true,
             total: count
         }
-        data[resource] = resources
+        if (resource === 'categories') {
+            data[resource] = [...resources, {title: 'Нет', slug: 'root'}]
+        } else {
+            data[resource] = resources
+        }
         return res.send(data)
     })
 
@@ -406,7 +424,7 @@ module.exports = (app, resourceCollection) => {
         }
 
         // МЕТОД СРАВНЕНИЯ ДВУХ ОБЪЕКТОВ
-        Object.prototype.equals = function(object2) {
+        Object.prototype.equals = function (object2) {
             for (propName in this) {
                 if (this.hasOwnProperty(propName) != object2.hasOwnProperty(propName)) {
                     return false;
@@ -415,14 +433,14 @@ module.exports = (app, resourceCollection) => {
                     return false;
                 }
             }
-            for(propName in object2) {
+            for (propName in object2) {
                 if (this.hasOwnProperty(propName) != object2.hasOwnProperty(propName)) {
                     return false
                 }
                 else if (typeof this[propName] != typeof object2[propName]) {
                     return false
                 }
-                if(!this.hasOwnProperty(propName))
+                if (!this.hasOwnProperty(propName))
                     continue
                 if (this[propName] instanceof Array && object2[propName] instanceof Array) {
                     if (!this[propName].equals(object2[propName]))
@@ -432,7 +450,7 @@ module.exports = (app, resourceCollection) => {
                     if (!this[propName].equals(object2[propName]))
                         return false;
                 }
-                else if(this[propName] != object2[propName]) {
+                else if (this[propName] != object2[propName]) {
                     return false;
                 }
             }
@@ -445,7 +463,7 @@ module.exports = (app, resourceCollection) => {
                 return false
             if (this.length != array.length)
                 return false
-            for (var i = 0, l=this.length; i < l; i++) {
+            for (var i = 0, l = this.length; i < l; i++) {
                 if (this[i] instanceof Array && array[i] instanceof Array) {
                     if (!this[i].equals(array[i]))
                         return false
@@ -580,12 +598,84 @@ module.exports = (app, resourceCollection) => {
                 success: true
             })
         }
+        if (resource === 'categories') {
+            if (!resourceItem.parentCategory) {
+                let maxLeft_key = -1
+                let maxRight_key = 0
+                const categories = await resourceCollection(resource).find({}).toArray()
+                categories.forEach(item => {
+                    if (item.left_key > maxLeft_key) {
+                        maxLeft_key = item.left_key
+                    }
+                    if (item.right_key > maxRight_key) {
+                        maxRight_key = item.right_key
+                    }
+                })
+                await resourceCollection(resource).insert({
+                    ...resourceItem,
+                    left_key: maxLeft_key + 2,
+                    right_key: maxRight_key + 2,
+                    level: 1
+                })
+                return res.send({
+                    success: true
+                })
+            } else {
+                const {left_key, right_key, level} = await resourceCollection('categories').findOne({slug: resourceItem.parentCategory})
+                const categories = await resourceCollection('categories').find({}).toArray()
+                categories.forEach(async category => {
+                    if (category.left_key > right_key) {
+                        await resourceCollection(resource).update({_id: ObjectID(category._id)}, {
+                            $set: {
+                                left_key: category.left_key + 2,
+                                right_key: category.right_key + 2
+                            }
+                        })
+                    }
+                    if (category.right_key >= right_key && category.left_key < right_key) {
+                        await resourceCollection(resource).update({_id: ObjectID(category._id)}, {
+                            $set: {
+                                right_key: category.right_key + 2
+                            }
+                        })
+                    }
+                })
+                try {
+                    await resourceCollection(resource).insert({
+                        ...resourceItem,
+                        left_key: right_key,
+                        right_key: right_key + 1,
+                        level: level + 1
+                    })
+                } catch (err) {
+                    return res.send({
+                        success: false,
+                        msg: 'Ошибка создания категории'
+                    })
+                }
+                return res.send({
+                    success: true
+                })
+            }
+            try {
+                await resourceCollection(resource).insert(resourceItem)
+            } catch (err) {
+                return res.send({
+                    success: false,
+                    msg: 'Ошибка создания категории'
+                })
+            }
+            res.send({
+                success: true
+            })
+            return
+        }
         try {
             await resourceCollection(resource).insert(resourceItem)
         } catch (err) {
             return res.send({
                 success: false,
-                msg: 'Ошибка создания пользователя'
+                msg: 'Ошибка создания ресурса'
             })
         }
         res.send({
@@ -657,6 +747,53 @@ module.exports = (app, resourceCollection) => {
                 })
             }
         }
+        /**
+         *ПЕРЕМЕЩЕНИЕ УЗЛА, ЗАГАТОВКА
+         */
+        /*
+        if (resource === 'categories') {
+            const oldResource = await resourceCollection(resource).findOne({_id: ObjectID(req.params.id)})
+            const oldParentCategory = await resourceCollection(resource).findOne({slug: oldResource.parentCategory})
+            const parentCategory = await resourceCollection(resource).findOne({slug: newResource.parentCategory})
+            const categories = await resourceCollection(resource).find({}).toArray()
+            const moved = {
+                level: newResource.level, //$level
+                left_key: newResource.left_key, //$left_key
+                right_key: newResource.right_key //$right_key
+            }
+            const oldParent = {
+                right_key: oldParentCategory.right_key,
+                level: oldParentCategory.level
+            }
+            const parent = {
+                level: parentCategory.level, //$level_up
+                right_key: parentCategory.right_key
+            }
+            let right_key_near = parent.right_key //right_key
+            if (parentCategory.slug === 'root') {
+                console.log('ROOOOOOOOOOOOOOOOT')
+                categories.forEach(category => {
+                    if (category.right_key > right_key_near) {
+                        right_key_near = category.right_key
+                    }
+                })
+            }
+            if (oldParent.level - parent.level === 1) {
+                console.log('OLDPARENT - PARENT')
+                right_key_near = oldParent.right_key
+            }
+            let id_edit = []
+            categories.forEach(category => {
+                if (category.left_key >= moved.left_key && category.right_key <= moved.right_key) {
+                    id_edit.push(category.slug)
+                }
+            })
+            console.log(right_key_near)
+            console.log(moved)
+            return res.send({
+                success: true
+            })
+        }*/
         await resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, newResource)
             .catch(() => {
                 return res.send({
@@ -702,6 +839,35 @@ module.exports = (app, resourceCollection) => {
                     error: e
                 })
             }
+        }
+        if (resource === 'categories') {
+            const {left_key, right_key} = await resourceCollection(req.params.resource).findOne({_id: ObjectID(req.params.id)})
+            const categories = await resourceCollection(req.params.resource).find({}).toArray()
+            categories.forEach(async category => {
+                if (category.left_key > -left_key && category.right_key <= right_key) {
+                    await resourceCollection(req.params.resource).deleteOne({_id: ObjectID(category._id)})
+                }
+                if (category.right_key > right_key && category.left_key < left_key) {
+                    await resourceCollection(req.params.resource).update({_id: ObjectID(category._id)}, {
+                        $set: {
+                            right_key: category.right_key - (right_key - left_key + 1)
+                        }
+                    })
+                }
+                if (category.left_key > right_key) {
+                    await resourceCollection(req.params.resource).update({_id: ObjectID(category._id)}, {
+                        $set: {
+                            left_key: category.left_key - (right_key - left_key + 1),
+                            right_key: category.right_key - (right_key - left_key + 1)
+                        }
+                    })
+                }
+            })
+            console.log(left_key)
+            console.log(right_key)
+            return res.send({
+                success: true
+            })
         }
         await resourceCollection(req.params.resource).deleteOne({_id: ObjectID(req.params.id)})
             .catch(() => {
