@@ -1,3 +1,4 @@
+require('isomorphic-fetch')
 const ObjectID = require('mongodb').ObjectID
 const multer = require('multer')
 const fs = require('fs')
@@ -5,10 +6,12 @@ const cloudinary = require('cloudinary')
 const Papa = require('papaparse')
 const gm = require('gm')
 const archiver = require('archiver')
+const Dropbox = require('dropbox').Dropbox
 
 const AuthProvider = require('../../core/auth.provider')
 const DataProvider = require('../../core/data.provider')
 
+const dbx = new Dropbox({accessToken: 'AUQh6jPO0UAAAAAAAAAADVeEVI3HwyqIWLz3nqwwsc4DvJwZzZ-DsIbVjGTmEgYZ'})
 cloudinary.config({
     cloud_name: 'dtb4964cx',
     api_key: '822487292722641',
@@ -224,6 +227,36 @@ module.exports = (app, resourceCollection) => {
         archive.pipe(output)
         archive.append(fs.createReadStream(pathFile), {name: `${time.toLocaleDateString()}.${formatedDate}.csv`})
         archive.finalize()
+    })
+
+    app.post('/api/upload', upload_middleware.single('file'), async (req, res) => {
+        fs.readFile(req.file.path, {encoding: 'utf-8'}, async (err, data) => {
+            if (err) throw err
+            fs.unlinkSync(req.file.path)
+            try {
+                await dbx.filesUpload({path: '/' + req.file.filename + req.file.originalname, contents: data})
+            } catch (e) {
+                return res.send({
+                    success: false,
+                    msg: 'Ошибка при загрузке файла',
+                    error: e
+                })
+            }
+            try {
+                const fileInfo = await dbx.sharingCreateSharedLinkWithSettings({path: '/' + req.file.filename + req.file.originalname})
+                res.send({
+                    success: true,
+                    filename: req.file.filename + req.file.originalname,
+                    originalFileName: req.file.originalname
+                })
+            } catch (e) {
+                return res.send({
+                    success: false,
+                    msg: 'Ошибка при получении ссылки на файл',
+                    error: e
+                })
+            }
+        })
     })
 
 
