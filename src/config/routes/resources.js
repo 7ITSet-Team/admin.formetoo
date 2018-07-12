@@ -283,6 +283,39 @@ module.exports = (app, resourceCollection) => {
             })
     })
 
+    app.post('/api/legalentity', async (req, res) => {
+        const legalentity = await resourceCollection('legalentity').find().toArray()
+        console.log(legalentity)
+        if (!!legalentity[0] && legalentity[0].name !== req.body.name) {
+            try {
+                await resourceCollection('legalentity').updateOne({name: legalentity[0].name}, {$set: {...req.body}})
+                res.send({
+                    success: true
+                })
+            } catch (e) {
+                return res.send({
+                    success: false,
+                    msg: 'Ошибка при изменении юридического лица',
+                    error: e
+                })
+            }
+        } else {
+            try {
+                console.log(req.body)
+                await resourceCollection('legalentity').insert({...req.body})
+                res.send({
+                    success: true
+                })
+            } catch (e) {
+                return res.send({
+                    success: false,
+                    msg: 'Ошибка при создании юридического лица',
+                    error: e
+                })
+            }
+        }
+    })
+
     app.get('/api/:resource', async (req, res) => {
         const resource = req.params.resource
         if (resource === 'tree') {
