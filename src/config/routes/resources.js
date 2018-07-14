@@ -7,6 +7,7 @@ const Papa = require('papaparse')
 const gm = require('gm')
 const archiver = require('archiver')
 const Dropbox = require('dropbox').Dropbox
+const exec = require('child_process').exec
 
 const AuthProvider = require('../../core/auth.provider')
 const DataProvider = require('../../core/data.provider')
@@ -262,25 +263,54 @@ module.exports = (app, resourceCollection) => {
 
     app.post('/api/upload/:resource', upload_middleware.single('file'), async (req, res) => {
         const path = req.file.destination + req.file.path
-        gm(path)
-            .drawText(80, 80, "FORMETOO.RU")
-            .autoOrient()
-            .fontSize(80)
-            .write("./watermarked.png", err => {
-                if (err) console.error(err)
-                fs.unlinkSync(path)
-                cloudinary.uploader.upload('watermarked.png', result => {
-                    if (!!result.url)
+        const {addWaterMark, rotation} = req.body
+        if (addWaterMark) {
+            const command = [
+                'convert -size 140x80 xc:none -fill gray \\\n',
+                '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
+                '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
+                '       +distort SRT ',
+                rotation || 0,
+                ' \\\n',
+                '          miff:- |\\\n',
+                '    composite -tile - ',
+                path,
+                '  watermarked.jpg'
+            ]
+            exec(command.join(' '), (err, stdout, stderr) => {
+                if (err) throw err
+                cloudinary.uploader.upload('watermarked.jpg', result => {
+                    if (!!result.url) {
                         res.send({
                             success: true,
                             url: result.url
                         })
-                    else
+                    } else {
                         res.send({
                             success: false
                         })
+                    }
+                    fs.unlinkSync(path)
+                    fs.unlinkSync('watermarked.jpg')
                 })
             })
+        } else {
+            cloudinary.uploader.upload(path, result => {
+                fs.unlinkSync(path)
+                if (!!result.url) {
+                    res.send({
+                        success: true,
+                        url: result.url
+                    })
+                } else {
+                    res.send({
+                        success: false
+                    })
+                }
+                fs.unlinkSync(path)
+                fs.unlinkSync('watermarked.jpg')
+            })
+        }
     })
 
     app.post('/api/legalentity', async (req, res) => {
