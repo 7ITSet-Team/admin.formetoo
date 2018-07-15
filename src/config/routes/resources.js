@@ -110,7 +110,7 @@ module.exports = (app, resourceCollection) => {
                 item.seo = {
                     title: !item.seo_title ? '' : item.seo_title,
                     description: !item.seo_description ? '' : item.seo_description,
-                    keywords: !item.seo_keywords ? [] : item.seo_keywords.split(', ')
+                    keywords: !item.seo_keywords ? [] : item.seo_keywords.split(/, ?/)
                 }
                 if (item.isActive === 'TRUE' || item.isActive === 'true')
                     item.isActive = true
@@ -119,12 +119,12 @@ module.exports = (app, resourceCollection) => {
                 delete item.seo_title
                 delete item.seo_description
                 delete item.seo_keywords
-                !!item.categories ? item.categories = item.categories.split(', ') : item.categories = []
-                !!item['tab-sets'] ? item['tab-sets'] = item['tab-sets'].split(', ') : item['tab-sets'] = []
-                !!item['attribute-sets'] ? item['attribute-sets'] = item['attribute-sets'].split(', ') : item['attribute-sets'] = []
-                !!item.images ? item.images = item.images.split(', ') : item.images = []
-                !!item.relatedProducts ? item.relatedProducts = item.relatedProducts.split(', ') : item.relatedProducts = []
-                !!item.fromSet ? item.fromSet = item.fromSet.split(', ') : item.fromSet = []
+                !!item.categories ? item.categories = item.categories.split(/, ?/) : item.categories = []
+                !!item['tab-sets'] ? item['tab-sets'] = item['tab-sets'].split(/, ?/) : item['tab-sets'] = []
+                !!item['attribute-sets'] ? item['attribute-sets'] = item['attribute-sets'].split(/, ?/) : item['attribute-sets'] = []
+                !!item.images ? item.images = item.images.split(/, ?/) : item.images = []
+                !!item.relatedProducts ? item.relatedProducts = item.relatedProducts.split(/, ?/) : item.relatedProducts = []
+                !!item.fromSet ? item.fromSet = item.fromSet.split(/, ?/) : item.fromSet = []
                 item.attributes = []
                 item.tabs = []
                 item.creationDate = new Date()
