@@ -4,7 +4,6 @@ const multer = require('multer')
 const fs = require('fs')
 const cloudinary = require('cloudinary')
 const Papa = require('papaparse')
-const gm = require('gm')
 const archiver = require('archiver')
 const Dropbox = require('dropbox').Dropbox
 const exec = require('child_process').exec
@@ -182,14 +181,14 @@ module.exports = (app, resourceCollection) => {
             delete newResource._id
             delete newResource.attributes
             delete newResource.tabs
-            !!newResource.categories ? newResource.categories = newResource.categories.join(' ') : newResource.categories = ''
-            !!newResource['attribute-sets'] ? newResource['attribute-sets'] = newResource['attribute-sets'].join(' ') : newResource['attribute-sets'] = ''
-            !!newResource['tab-sets'] ? newResource['tab-sets'] = newResource['tab-sets'].join(' ') : newResource['tab-sets'] = ''
-            !!newResource.fromSet ? newResource.fromSet = newResource.fromSet.join(' ') : newResource.fromSet = ''
-            !!newResource.relatedProducts ? newResource.relatedProducts = newResource.relatedProducts.join(' ') : newResource.relatedProducts = ''
-            !!newResource.images ? newResource.images = newResource.images.join(' ') : newResource.images = ''
-            newResource.creationDate = new Date(newResource.creationDate).toLocaleString()
-            newResource.modificationDate = new Date(newResource.creationDate).toLocaleString()
+            !!newResource.categories ? newResource.categories = newResource.categories.join(', ') : newResource.categories = ''
+            !!newResource['attribute-sets'] ? newResource['attribute-sets'] = newResource['attribute-sets'].join(', ') : newResource['attribute-sets'] = ''
+            !!newResource['tab-sets'] ? newResource['tab-sets'] = newResource['tab-sets'].join(', ') : newResource['tab-sets'] = ''
+            !!newResource.fromSet ? newResource.fromSet = newResource.fromSet.join(', ') : newResource.fromSet = ''
+            !!newResource.relatedProducts ? newResource.relatedProducts = newResource.relatedProducts.join(', ') : newResource.relatedProducts = ''
+            !!newResource.images ? newResource.images = newResource.images.join(', ') : newResource.images = ''
+            newResource.creationDate = newResource.creationDate.toLocaleString()
+            newResource.modificationDate = newResource.creationDate.toLocaleString()
             return newResource
         })
         const unparse = Papa.unparse(newResources, {
@@ -313,7 +312,6 @@ module.exports = (app, resourceCollection) => {
 
     app.post('/api/legalentity', async (req, res) => {
         const legalentity = await resourceCollection('legalentity').find().toArray()
-        console.log(legalentity)
         if (!!legalentity[0] && legalentity[0].name !== req.body.name) {
             try {
                 await resourceCollection('legalentity').updateOne({name: legalentity[0].name}, {$set: {...req.body}})
@@ -329,7 +327,6 @@ module.exports = (app, resourceCollection) => {
             }
         } else {
             try {
-                console.log(req.body)
                 await resourceCollection('legalentity').insert({...req.body})
                 res.send({
                     success: true
@@ -934,7 +931,7 @@ module.exports = (app, resourceCollection) => {
             const {left_key, right_key} = await resourceCollection(req.params.resource).findOne({_id: ObjectID(req.params.id)})
             const categories = await resourceCollection(req.params.resource).find({}).toArray()
             categories.forEach(async category => {
-                if (category.left_key > -left_key && category.right_key <= right_key) {
+                if (category.left_key >= left_key && category.right_key <= right_key) {
                     await resourceCollection(req.params.resource).deleteOne({_id: ObjectID(category._id)})
                 }
                 if (category.right_key > right_key && category.left_key < left_key) {
@@ -953,8 +950,6 @@ module.exports = (app, resourceCollection) => {
                     })
                 }
             })
-            console.log(left_key)
-            console.log(right_key)
             return res.send({
                 success: true
             })
