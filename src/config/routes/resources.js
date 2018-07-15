@@ -264,7 +264,7 @@ module.exports = (app, resourceCollection) => {
     app.post('/api/upload/:resource', upload_middleware.single('file'), async (req, res) => {
         const path = req.file.destination + req.file.path
         const {addWaterMark, rotation} = req.body
-        if (addWaterMark) {
+        if (addWaterMark === 'true') {
             const command = [
                 'convert -size 140x80 xc:none -fill gray \\\n',
                 '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
@@ -296,7 +296,6 @@ module.exports = (app, resourceCollection) => {
             })
         } else {
             cloudinary.uploader.upload(path, result => {
-                fs.unlinkSync(path)
                 if (!!result.url) {
                     res.send({
                         success: true,
@@ -308,7 +307,6 @@ module.exports = (app, resourceCollection) => {
                     })
                 }
                 fs.unlinkSync(path)
-                fs.unlinkSync('watermarked.jpg')
             })
         }
     })
@@ -401,11 +399,7 @@ module.exports = (app, resourceCollection) => {
             success: true,
             total: count
         }
-        if (resource === 'categories') {
-            data[resource] = [...resources, {title: 'Нет', slug: 'root'}]
-        } else {
-            data[resource] = resources
-        }
+        data[resource] = resources
         return res.send(data)
     })
 
