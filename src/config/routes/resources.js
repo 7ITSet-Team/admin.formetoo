@@ -259,7 +259,6 @@ module.exports = (app, resourceCollection) => {
         })
     })
 
-
     app.post('/api/upload/:resource', upload_middleware.single('file'), async (req, res) => {
         const path = req.file.destination + req.file.path
         const {addWaterMark, rotation} = req.body
@@ -307,6 +306,46 @@ module.exports = (app, resourceCollection) => {
                 }
                 fs.unlinkSync(path)
             })
+        }
+    })
+
+    app.post('/api/upload/3d/:resource', upload_middleware.array('files'), (req, res) => {
+        const files = req.files
+        const pathes = files.map(file => file.destination + file.path)
+        const {addWaterMark, rotation} = req.body
+        for (i = 0; i < pathes.length; i++) {
+            if (addWaterMark === 'true') {
+                const command = [
+                    'convert -size 140x80 xc:none -fill gray \\\n',
+                    '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
+                    '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
+                    '       +distort SRT ',
+                    rotation || 0,
+                    ' \\\n',
+                    '          miff:- |\\\n',
+                    '    composite -tile - ',
+                    pathes[i],
+                    '  watermarked.jpg'
+                ]
+                exec(command.join(' '), (err, stdout, stderr) => {
+                    if (err) throw err
+                    cloudinary.uploader.upload('watermarked.jpg', result => {
+                        if (!!result.url) {
+                            res.send({
+                                success: true,
+                                url: result.url
+                            })
+                        } else {
+                            res.send({
+                                success: false
+                            })
+                        }
+                        fs.unlinkSync(path)
+                        fs.unlinkSync('watermarked.jpg')
+                    })
+                })
+            }
+            fs.unlinkSync(pathes[i])
         }
     })
 
