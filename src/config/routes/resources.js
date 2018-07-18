@@ -364,52 +364,6 @@ module.exports = (app, resourceCollection) => {
                         })
                 })
             })
-        /*
-        const pathes = files.map(file => file.destination + file.path)
-        const {addWaterMark, rotation} = req.body
-        console.log(files.length)
-        let allPromises = pathes.map(path => {
-            return new Promise(resolve => {
-                if (addWaterMark === 'true') {
-                    const command = [
-                        'convert -size 140x80 xc:none -fill gray \\\n',
-                        '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
-                        '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
-                        '       +distort SRT ',
-                        rotation || 0,
-                        ' \\\n',
-                        '          miff:- |\\\n',
-                        '    composite -tile - ',
-                        path,
-                        '  watermarked.jpg'
-                    ]
-                    exec(command.join(' '), err => {
-                        if (err) throw err
-                        fs.unlinkSync(path)
-                        cloudinary.v2.uploader.upload('watermarked.jpg', {}, (err, result) => {
-                            if (!!result) {
-                                return resolve(result.url)
-                            }
-                        })
-                    })
-                } else {
-                    fs.unlinkSync(path)
-                    cloudinary.v2.uploader.upload('watermarked.jpg', {}, (err, result) => {
-                        if (!!result) {
-                            return resolve(result.url)
-                        }
-                    })
-                }
-            })
-        })
-        Promise.all(allPromises)
-            .then(value => {
-                res.send({
-                    success: true,
-                    urls: value
-                })
-            })
-            */
     })
 
     app.post('/api/legalentity', async (req, res) => {
