@@ -313,64 +313,117 @@ module.exports = (app, resourceCollection) => {
 
     app.post('/api/upload/3d/:resource', upload_middleware.single('file'), async (req, res) => {
         const {addWaterMark, rotation} = req.body
-        const archive = req.file
-        const archivePath = archive.destination + archive.path
-        fs.createReadStream(archivePath).pipe(unzip.Extract({path: archivePath + 'Extract'}))
-            .on('close', () => {
-                fs.unlink(archivePath, err => {
-                    if (err) throw err
-                })
-                fs.readdir(archivePath + 'Extract', (err, files) => {
-                    if (err) throw err
-                    let allPromises = files.map(file => {
-                        return new Promise(resolve => {
-                            if (addWaterMark === 'true') {
-                                const command = [
-                                    'convert -size 140x80 xc:none -fill gray \\\n',
-                                    '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
-                                    '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
-                                    '       +distort SRT ',
-                                    rotation || 0,
-                                    ' \\\n',
-                                    '          miff:- |\\\n',
-                                    '    composite -tile - ',
-                                    archivePath + 'Extract' + '/' + file,
-                                    '    ' + archivePath + 'Extract' + '/' + file + '-watermarked.jpg'
-                                ]
-                                exec(command.join(' '), err => {
-                                    if (err) throw err
-                                    cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file + '-watermarked.jpg', {}, (err, result) => {
+        if (req.file.mimetype === 'application/zip') {
+            const archive = req.file
+            const archivePath = archive.destination + archive.path
+            fs.createReadStream(archivePath).pipe(unzip.Extract({path: archivePath + 'Extract'}))
+                .on('close', () => {
+                    fs.unlink(archivePath, err => {
+                        if (err) throw err
+                    })
+                    fs.readdir(archivePath + 'Extract', (err, files) => {
+                        if (err) throw err
+                        let allPromises = files.map(file => {
+                            return new Promise(resolve => {
+                                if (addWaterMark === 'true') {
+                                    const command = [
+                                        'convert -size 140x80 xc:none -fill gray \\\n',
+                                        '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
+                                        '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
+                                        '       +distort SRT ',
+                                        rotation || 0,
+                                        ' \\\n',
+                                        '          miff:- |\\\n',
+                                        '    composite -tile - ',
+                                        archivePath + 'Extract' + '/' + file,
+                                        '    ' + archivePath + 'Extract' + '/' + file + '-watermarked.jpg'
+                                    ]
+                                    exec(command.join(' '), err => {
+                                        if (err) throw err
+                                        cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file + '-watermarked.jpg', {}, (err, result) => {
+                                            if (!!result) {
+                                                return resolve(result.url)
+                                            }
+                                        })
+                                    })
+                                } else {
+                                    cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file, {}, (err, result) => {
                                         if (!!result) {
                                             return resolve(result.url)
                                         }
                                     })
-                                })
-                            } else {
-                                cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file, {}, (err, result) => {
-                                    if (!!result) {
-                                        return resolve(result.url)
-                                    }
-                                })
-                            }
-                        })
-                    })
-                    Promise.all(allPromises)
-                        .then(value => {
-                            rimraf(archivePath + 'Extract/', () => {})
-                            res.send({
-                                success: true,
-                                urls: value
+                                }
                             })
                         })
+                        Promise.all(allPromises)
+                            .then(value => {
+                                rimraf(archivePath + 'Extract/', () => {
+                                })
+                                res.send({
+                                    success: true,
+                                    urls: value
+                                })
+                            })
+                    })
                 })
-            })
+        } else {
+            const path = req.file.destination + req.file.path
+            if (addWaterMark === 'true') {
+                const command = [
+                    'convert -size 140x80 xc:none -fill gray \\\n',
+                    '          -gravity NorthWest -draw "text 10,10 \'FORMETOO.RU\'" \\\n',
+                    '          -gravity SouthEast -draw "text 5,15 \'FORMETOO.RU\'" \\\n',
+                    '       +distort SRT ',
+                    rotation || 0,
+                    ' \\\n',
+                    '          miff:- |\\\n',
+                    '    composite -tile - ',
+                    path,
+                    '  watermarked.jpg'
+                ]
+                exec(command.join(' '), (err, stdout, stderr) => {
+                    if (err) throw err
+                    cloudinary.v2.uploader.upload('watermarked.jpg', {}, (err, result) => {
+                        if (!!result.url) {
+                            res.send({
+                                success: true,
+                                url: result.url
+                            })
+                        } else {
+                            res.send({
+                                success: false
+                            })
+                        }
+                        fs.unlinkSync(path)
+                        fs.unlinkSync('watermarked.jpg')
+                    })
+                })
+            } else {
+                cloudinary.v2.uploader.upload(path, (err, result) => {
+                    if (!!result.url) {
+                        res.send({
+                            success: true,
+                            url: result.url
+                        })
+                    } else {
+                        res.send({
+                            success: false
+                        })
+                    }
+                    fs.unlinkSync(path)
+                })
+            }
+        }
     })
 
     app.post('/api/legalentity', async (req, res) => {
         const legalentity = await resourceCollection('legalentity').find().toArray()
-        if (!!legalentity[0] && legalentity[0].name !== req.body.name) {
+        let newLegalentity = req.body
+        delete newLegalentity._id
+        if (legalentity.length !== 0) {
             try {
-                await resourceCollection('legalentity').updateOne({name: legalentity[0].name}, {$set: {...req.body}})
+                resourceCollection('legalentity').remove({})
+                await resourceCollection('legalentity').insert({...newLegalentity})
                 res.send({
                     success: true
                 })

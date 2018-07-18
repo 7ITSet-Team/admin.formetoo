@@ -7,7 +7,6 @@ module.exports = (app, resourceCollection) => {
             email: email.toLowerCase()
         }
         const result = await AuthProvider.checkLogin(resourceCollection('users'), user, password)
-        console.log(await AuthProvider.getHash(password))
         if (result.success)
             return res
                 .status(result.status)
