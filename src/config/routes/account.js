@@ -6,21 +6,30 @@ module.exports = (app, resourceCollection) => {
         const user = {
             email: email.toLowerCase()
         }
-        const result = await AuthProvider.checkLogin(resourceCollection('users'), user, password)
-        if (result.success)
-            return res
-                .status(result.status)
-                .send({
-                    success: true,
-                    token: result.token
-                })
-        else
-            return res
-                .status(result.status)
-                .send({
+        const findUser = await resourceCollection('users').findOne(user)
+        const role = await resourceCollection('roles').findOne({slug: findUser.role})
+        if (!role.isUser) {
+            const result = await AuthProvider.checkLogin(resourceCollection('users'), user, password)
+            if (result.success)
+                res
+                    .status(result.status)
+                    .send({
+                        success: true,
+                        token: result.token
+                    })
+            else
+                res
+                    .status(result.status)
+                    .send({
+                        success: false,
+                        msg: result.msg
+                    })
+        } else {
+            res.send({
                 success: false,
-                msg: result.msg
+                msg: 'Извините, вам вход воспрещён'
             })
+        }
     })
 
     app.get('/api/profile', (req, res) => {
@@ -42,7 +51,7 @@ module.exports = (app, resourceCollection) => {
         const profile = req.body
         const token = req.headers.authorization
         const oldUser = AuthProvider.decode(token)
-        const newToken = AuthProvider._getToken({email: profile.user}, 'my(#@RanFdOm(43*5234secret_++?12!key')
+        const newToken = AuthProvider._getToken({email: profile.user}, 'SYW/:ZIFrxd\')ueR#<Oj,ABzutT]QI({%MekfS9(l|7NM-&m6RTgP@)X44sOGVE')
         await resourceCollection('users').update({email: oldUser.email}, {$set: {email: profile.user}})
         const newUser = await resourceCollection('users').findOne({email: profile.user})
         return res

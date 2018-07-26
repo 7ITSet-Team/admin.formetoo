@@ -883,7 +883,7 @@ module.exports = (app, resourceCollection) => {
         const resource = req.params.resource
         if (resource === 'users') {
             let user = req.body
-            user.password = AuthProvider.getHash(req.body.password)
+            user.password = await AuthProvider.getHash(req.body.password)
             user._id = ObjectID(req.params.id)
             await resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, user)
                 .catch(() => {
@@ -943,53 +943,6 @@ module.exports = (app, resourceCollection) => {
                 })
             }
         }
-        /**
-         *ПЕРЕМЕЩЕНИЕ УЗЛА, ЗАГАТОВКА
-         */
-        /*
-        if (resource === 'categories') {
-            const oldResource = await resourceCollection(resource).findOne({_id: ObjectID(req.params.id)})
-            const oldParentCategory = await resourceCollection(resource).findOne({slug: oldResource.parentCategory})
-            const parentCategory = await resourceCollection(resource).findOne({slug: newResource.parentCategory})
-            const categories = await resourceCollection(resource).find({}).toArray()
-            const moved = {
-                level: newResource.level, //$level
-                left_key: newResource.left_key, //$left_key
-                right_key: newResource.right_key //$right_key
-            }
-            const oldParent = {
-                right_key: oldParentCategory.right_key,
-                level: oldParentCategory.level
-            }
-            const parent = {
-                level: parentCategory.level, //$level_up
-                right_key: parentCategory.right_key
-            }
-            let right_key_near = parent.right_key //right_key
-            if (parentCategory.slug === 'root') {
-                console.log('ROOOOOOOOOOOOOOOOT')
-                categories.forEach(category => {
-                    if (category.right_key > right_key_near) {
-                        right_key_near = category.right_key
-                    }
-                })
-            }
-            if (oldParent.level - parent.level === 1) {
-                console.log('OLDPARENT - PARENT')
-                right_key_near = oldParent.right_key
-            }
-            let id_edit = []
-            categories.forEach(category => {
-                if (category.left_key >= moved.left_key && category.right_key <= moved.right_key) {
-                    id_edit.push(category.slug)
-                }
-            })
-            console.log(right_key_near)
-            console.log(moved)
-            return res.send({
-                success: true
-            })
-        }*/
         await resourceCollection(resource).findOneAndUpdate({_id: ObjectID(req.params.id)}, newResource)
             .catch(() => {
                 return res.send({

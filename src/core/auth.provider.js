@@ -26,13 +26,14 @@ class AuthProvider {
 
     static async checkLogin(collection, user, password) {
         const result = await collection.findOne(user)
+        console.log(result, 'НАЙДЕННЫЙ')
         if (!!result) {
             const success = await bcrypt.compare(password, result.password)
             if (success) {
                 return {
                     success: true,
                     status: 200,
-                    token: this._getToken(user, 'my(#@RanFdOm(43*5234secret_++?12!key')
+                    token: this._getToken(user, 'SYW/:ZIFrxd\')ueR#<Oj,ABzutT]QI({%MekfS9(l|7NM-&m6RTgP@)X44sOGVE')
                 }
             } else {
                 return {
