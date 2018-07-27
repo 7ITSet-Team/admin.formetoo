@@ -26,7 +26,6 @@ class AuthProvider {
 
     static async checkLogin(collection, user, password) {
         const result = await collection.findOne(user)
-        console.log(result, 'НАЙДЕННЫЙ')
         if (!!result) {
             const success = await bcrypt.compare(password, result.password)
             if (success) {
