@@ -57,17 +57,8 @@ module.exports = (app, resourceCollection) => {
                     $in: attributeSlugs
                 }
             }).toArray()
-            const attributesData = attributes.map(attribute => {
-                return {
-                    slug: attribute.slug,
-                    title: attribute.title,
-                    name: attribute.name,
-                    attrType: attribute.attrType,
-                    variants: attribute.variants
-                }
-            })
 
-            res.send(attributesData)
+            res.send(attributes)
         }
         if (req.params.resource === 'tabs') {
             const tabSets = await resourceCollection('tab-sets').find({
@@ -84,17 +75,8 @@ module.exports = (app, resourceCollection) => {
                     $in: tabSlugs
                 }
             }).toArray()
-            const tabsData = tabs.map(tab => {
-                return {
-                    slug: tab.slug,
-                    title: tab.title,
-                    name: tab.name,
-                    tabType: tab.tabType,
-                    variants: tab.variants
-                }
-            })
 
-            res.send(tabsData)
+            res.send(tabs)
         }
     })
 
@@ -144,6 +126,7 @@ module.exports = (app, resourceCollection) => {
         let resources = await resourceCollection(req.params.resource).find({}).toArray()
         const newResources = resources.map(resource => {
             let newResource = {
+                id: resource._id,
                 ...resource,
                 seo_title: resource.seo.title,
                 seo_description: resource.seo.description,
@@ -194,7 +177,7 @@ module.exports = (app, resourceCollection) => {
             return newResource
         })
         const unparse = Papa.unparse(newResources, {
-            delimiter: ','
+            delimiter: ';'
         })
         let time = new Date()
         const formatedDate = time.getHours().toString() + ':' + time.getMinutes().toString() + ':' + time.getSeconds().toString()
@@ -347,7 +330,7 @@ module.exports = (app, resourceCollection) => {
                                         })
                                     })
                                 } else {
-                                    cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file, {}, (err, result) => {
+                                    cloudinary.v2.uploader.upload(archivePath + 'Extract' + '/' + file, {use_filename: true, unique_filename: false, invalidate: true}, (err, result) => {
                                         if (!!result) {
                                             return resolve(result.url)
                                         }
@@ -399,7 +382,7 @@ module.exports = (app, resourceCollection) => {
                     })
                 })
             } else {
-                cloudinary.v2.uploader.upload(path, (err, result) => {
+                cloudinary.v2.uploader.upload(path, {}, (err, result) => {
                     if (!!result.url) {
                         res.send({
                             success: true,
